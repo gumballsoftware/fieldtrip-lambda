@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'Fieldtrip Lambda - Fieldtrips, guided from the cloud.
+
+  '
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: Fieldtrip-Lambda
+    Description: Fieldtrips, guided from the cloud.
+    Author: Kit McCormick
+    SpdxLicenseId: Beerware
+    LicenseUrl: s3://fieldtripuploads/4f14fa957b753d78fdefb6abf1760915
+    ReadmeUrl: s3://fieldtripuploads/c61b31afbda9085d0ab14e66a807cb58
+    Labels:
+    - SMS
+    - travel
+    - pinpoint
+    - lambda
+    - nodejs
+    HomePageUrl: https://github.com/gumballsoftware/fieldtrip-lambda
+    SemanticVersion: 1.0.0
+    SourceCodeUrl: https://github.com/gumballsoftware/fieldtrip-lambda
+Parameters:
+  ApplicationId:
+    Type: String
+    Default: PinpointApplicationId
+    Description: (Required) Pinpoint application ID (project ID)
+    AllowedPattern: ^[A-Za-z0-9-]+$
+    ConstraintDescription: Required parameter.
+Globals:
+  Function:
+    Timeout: 10
+Resources:
+  smsResponderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: s3://fieldtripuploads/ee3e13c2a5c7cd5642d1a723af350a32
+      Handler: app.lambdaHandler
+      Runtime: nodejs12.x
+      Environment:
+        Variables:
+          ApplicationId:
+            Ref: ApplicationId
+      Policies:
+      - Statement:
+        - Sid: PinpointAccess
+          Effect: Allow
+          Action:
+          - mobiletargeting:*
+          Resource: '*'
+        - Sid: PinpointSNStopic
+          Effect: Allow
+          Action:
+          - sns:*
+          Resource:
+            Ref: smsResponderIncomingSNSTopic
+      Events:
+        incomingSNS:
+          Type: SNS
+          Properties:
+            Topic:
+              Ref: smsResponderIncomingSNSTopic
+  smsResponderIncomingSNSTopic:
+    Type: AWS::SNS::Topic
+Outputs:
+  smsResponderFunction:
+    Description: Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - smsResponderFunction
+      - Arn
+  smsResponderFunctionIamRole:
+    Description: Implicit IAM Role created for function
+    Value:
+      Fn::GetAtt:
+      - smsResponderFunctionRole
+      - Arn
